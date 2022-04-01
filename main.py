@@ -1,5 +1,5 @@
 import time
-
+from bs4 import BeautifulSoup
 import requests
 from loguru import logger
 from random import choice
@@ -7,17 +7,33 @@ from threading import Thread
 import multiprocessing
 
 with open("config/accounts.txt", "r", encoding="utf-8") as file: data = file.read().split("\n")
-with open("config/proxies.txt", "r", encoding="utf-8") as file: proxy = file.read().split("\n")
+
 
 class Nord():
 
-    def __init__(self, UserChoice):
+    def __init__(self, UserChoice, Link):
         self.UserChoice = UserChoice
+        self.Link = Link
 
+
+    def ScrapProxy(self):
+        while True:
+            try:
+                r = requests.get(self.Link)
+                with open("config/proxies.txt", "w", encoding="utf-8") as file: file.write(str(r.text))
+                proxylen = str(r.text).split('\n')
+                logger.success(f"Обновил список прокси: {len(proxylen)} проксей")
+                time.sleep(30)
+            except:
+                time.sleep(60)
 
     def check_proxy(self):
             try:
                 while True:
+
+                    with open("config/proxies.txt", "r", encoding="utf-8") as file:
+                        proxy = file.read().split("\n")
+
                     RandomProxy = choice(proxy)
 
                     proxyDict = {}
@@ -138,8 +154,10 @@ class Nord():
 def main():
     try:
         UserChoice = int(input("Выберите вид прокси:\n1 - HTTP / HTTPS\n2 - SOCKS5\n3 - SOCKS4\n\nВведите цифру: "))
-        Bot = Nord(UserChoice)
+        Link =  input("Введите прямую ссылку с прокси: ")
+        Bot = Nord(UserChoice, Link)
 
+        Thread(target=Bot.ScrapProxy).start()
         for i in range(0, 1000):
             Thread(target=Bot.start).start()
 
